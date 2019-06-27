@@ -27,12 +27,12 @@ void BezierSpline::ResetDerived()
     _p2Points.clear();
 }
 
-
+/*computes control points given knots K. */
 bool BezierSpline::ComputeSpline()
 {
-    const std::vector<Vector3d>& p = GetPoints();
+    const std::vector<Vector3d>& k = GetPoints();  
 
-    int N = (int)p.size()-1;
+    int N = (int)k.size()-1;
     _p1Points.resize(N);
     _p2Points.resize(N);
     if(N == 0)
@@ -41,9 +41,9 @@ bool BezierSpline::ComputeSpline()
     if(N == 1)
     {  // Only 2 points...just create a straight line.
         // Constraint:  3*P1 = 2*P0 + P3
-        _p1Points[0] = (2.0/3.0*p[0] + 1.0/3.0*p[1]);
+        _p1Points[0] = (2.0/3.0*k[0] + 1.0/3.0*k[1]);
         // Constraint:  P2 = 2*P1 - P0
-        _p2Points[0] = 2.0*_p1Points[0] - p[0];
+        _p2Points[0] = 2.0*_p1Points[0] - k[0];
         return true;
     }
 
@@ -54,15 +54,15 @@ bool BezierSpline::ComputeSpline()
     std::vector<Vector3d> r(N);
 
     /*left most segment*/
-    a[0].x() = 0;
+    a[0].x() = 0;   // outside matrix
     b[0].x() = 2;
     c[0].x() = 1;
-    r[0].x() = p[0].x()+2*p[1].x();
+    r[0].x() = k[0].x()+2*k[1].x();
 
     a[0].y() = 0;
     b[0].y() = 2;
     c[0].y() = 1;
-    r[0].y() = p[0].y()+2*p[1].y();
+    r[0].y() = k[0].y()+2*k[1].y();
 
     /*internal segments*/
     for (int i = 1; i < N - 1; i++)
@@ -70,24 +70,24 @@ bool BezierSpline::ComputeSpline()
         a[i].x()=1;
         b[i].x()=4;
         c[i].x()=1;
-        r[i].x() = 4 * p[i].x() + 2 * p[i+1].x();
+        r[i].x() = 4 * k[i].x() + 2 * k[i+1].x();
 
         a[i].y()=1;
         b[i].y()=4;
         c[i].y()=1;
-        r[i].y() = 4 * p[i].y() + 2 * p[i+1].y();
+        r[i].y() = 4 * k[i].y() + 2 * k[i+1].y();
     }
 
     /*right segment*/
     a[N-1].x() = 2;
     b[N-1].x() = 7;
     c[N-1].x() = 0;
-    r[N-1].x() = 8*p[N-1].x()+p[N].x();
+    r[N-1].x() = 8*k[N-1].x()+k[N].x();
 
     a[N-1].y() = 2;
     b[N-1].y() = 7;
     c[N-1].y() = 0;
-    r[N-1].y() = 8*p[N-1].y()+p[N].y();
+    r[N-1].y() = 8*k[N-1].y()+k[N].y();
 
 
     /*solves Ax=b with the Thomas algorithm (from Wikipedia)*/
@@ -115,12 +115,12 @@ bool BezierSpline::ComputeSpline()
     /*we have p1, now compute p2*/
     for (int i=0;i<N-1;i++)
     {
-        _p2Points[i].x()=2*p[i+1].x()-_p1Points[i+1].x();
-        _p2Points[i].y()=2*p[i+1].y()-_p1Points[i+1].y();
+        _p2Points[i].x()=2*k[i+1].x()-_p1Points[i+1].x();
+        _p2Points[i].y()=2*k[i+1].y()-_p1Points[i+1].y();
     }
 
-    _p2Points[N-1].x() = 0.5 * (p[N].x()+_p1Points[N-1].x());
-    _p2Points[N-1].y() = 0.5 * (p[N].y()+_p1Points[N-1].y());
+    _p2Points[N-1].x() = 0.5 * (k[N].x()+_p1Points[N-1].x());
+    _p2Points[N-1].y() = 0.5 * (k[N].y()+_p1Points[N-1].y());
 
     return true;
 }
