@@ -1,4 +1,4 @@
-#include "../lib/matplotlibcpp.h"
+// #include "../lib/matplotlibcpp.h"
 #include "../include/cubic_spline.h"
 #include "../include/bezier_spline.h"
 
@@ -7,22 +7,22 @@ int main(int argc, char** argv)
 {
     std::vector<Vector3d> path; // input
     int divisions = 50; // input
-    path.push_back(Vector3d(0.0,0.0,0.0));
-    path.push_back(Vector3d(0.7,0.45,0.0));
-    path.push_back(Vector3d(1.2,1.0,0.0));
-    path.push_back(Vector3d(1.9,1.5,0.0));
-    path.push_back(Vector3d(1.1,1.4,0.0));
-    path.push_back(Vector3d(1.3,1.6,0.0));
-    path.push_back(Vector3d(2.0,2.2,0.0));
-    path.push_back(Vector3d(2.5,3.0,0.0));
-    path.push_back(Vector3d(4.0,0.0,0.0));
     // path.push_back(Vector3d(0.0,0.0,0.0));
-    // path.push_back(Vector3d(0.2,0.2,0.0));
-    // path.push_back(Vector3d(0.4,0.3,0.0));
-    // path.push_back(Vector3d(0.6,0.35,0.0));
-    // path.push_back(Vector3d(0.8,0.3,0.0));
-    // path.push_back(Vector3d(1.0,0.2,0.0));
-    // path.push_back(Vector3d(1.2,0.0,0.0));
+    // path.push_back(Vector3d(0.7,0.45,0.0));
+    // path.push_back(Vector3d(1.2,1.0,0.0));
+    // path.push_back(Vector3d(1.9,1.5,0.0));
+    // path.push_back(Vector3d(1.1,1.4,0.0));
+    // path.push_back(Vector3d(1.3,1.6,0.0));
+    // path.push_back(Vector3d(2.0,2.2,0.0));
+    // path.push_back(Vector3d(2.5,3.0,0.0));
+    // path.push_back(Vector3d(4.0,0.0,0.0));
+    path.push_back(Vector3d(0.0,0.0,0.0));
+    path.push_back(Vector3d(0.2,0.2,0.0));
+    path.push_back(Vector3d(0.4,0.3,0.0));
+    path.push_back(Vector3d(0.6,0.35,0.0));
+    path.push_back(Vector3d(0.8,0.3,0.0));
+    path.push_back(Vector3d(1.0,0.2,0.0));
+    path.push_back(Vector3d(1.2,0.0,0.0));
     std::vector<double> x_orig(path.size());
     std::vector<double> y_orig(path.size());
     for(int i=0;i<path.size();i++)
@@ -53,11 +53,9 @@ int main(int argc, char** argv)
         c_pathy[i] = c_path[i].y();
     }
     c_spline.PrintData(5); 
-    matplotlibcpp::plot(x_orig, y_orig,"x");
-    matplotlibcpp::plot(c_pathx, c_pathy,"r-");   // show plots
-    matplotlibcpp::plot(b_pathx, b_pathy);   // show plots
-    matplotlibcpp::show();
+    // matplotlibcpp::plot(x_orig, y_orig,"x");
+    // matplotlibcpp::plot(c_pathx, c_pathy,"r-");   // show plots
+    // matplotlibcpp::plot(b_pathx, b_pathy);   // show plots
+    // matplotlibcpp::show();
 
-    // Push back in the original first point.
-    //   path.push_back(firstPoint);
 }
