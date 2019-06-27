@@ -3,9 +3,6 @@
 //http://www2.informatik.uni-freiburg.de/~lau/students/Sprunk2008.pdf
 Vector3d BezierSpline::Evaluate(int seg, double t)
 {
-//   assert(seg < _p1Points.size());
-//   assert(seg < _p2Points.size());
-
     double omt = 1.0 - t;
 
     Vector3d p0(GetPoints()[seg]);
@@ -13,10 +10,10 @@ Vector3d BezierSpline::Evaluate(int seg, double t)
     Vector3d p2(_p2Points[seg]);
     Vector3d p3(GetPoints()[seg+1]);
 
-    double xVal = omt*omt*omt*p0.x() + 3*omt*omt*t*p1.x() +3*omt*t*t*p2.x()+t*t*t*p3.x();
-    double yVal = omt*omt*omt*p0.y() + 3*omt*omt*t*p1.y() +3*omt*t*t*p2.y()+t*t*t*p3.y();
-    double zVal = 0;
-    return Vector3d(xVal,yVal,zVal);
+    /* Compute the bezier curve in 3-Space */
+    Vector3d cubic_bezier_curve = omt*omt*omt*p0 + 3*omt*omt*t*p1 +3*omt*t*t*p2+t*t*t*p3;
+    cubic_bezier_curve.z()=0;
+    return cubic_bezier_curve;
 }
 
 /* Clear out all the data.
@@ -54,40 +51,22 @@ bool BezierSpline::ComputeSpline()
     std::vector<Vector3d> r(N);
 
     /*left most segment*/
-    a[0].x() = 0;   // outside matrix
-    b[0].x() = 2;
-    c[0].x() = 1;
-    r[0].x() = k[0].x()+2*k[1].x();
-
-    a[0].y() = 0;
-    b[0].y() = 2;
-    c[0].y() = 1;
-    r[0].y() = k[0].y()+2*k[1].y();
+    a[0].x() = 0;   b[0].x() = 2;   c[0].x() = 1;   r[0].x() = k[0].x()+2*k[1].x();// outside matrix
+    a[0].y() = 0;   b[0].y() = 2;   c[0].y() = 1;   r[0].y() = k[0].y()+2*k[1].y();
+    // a[0].z() = 0;   b[0].z() = 2;   c[0].z() = 1;   r[0].z() = k[0].z()+2*k[1].z();
 
     /*internal segments*/
     for (int i = 1; i < N - 1; i++)
     {
-        a[i].x()=1;
-        b[i].x()=4;
-        c[i].x()=1;
-        r[i].x() = 4 * k[i].x() + 2 * k[i+1].x();
-
-        a[i].y()=1;
-        b[i].y()=4;
-        c[i].y()=1;
-        r[i].y() = 4 * k[i].y() + 2 * k[i+1].y();
+        a[i].x() = 1; b[i].x() = 4; c[i].x() = 1; r[i].x() = 4*k[i].x()+2*k[i+1].x();
+        a[i].y() = 1; b[i].y() = 4; c[i].y() = 1; r[i].y() = 4*k[i].y()+2*k[i+1].y();
+        // a[i].z() = 1; b[i].z() = 4; c[i].z() = 1; r[i].z() = 4*k[i].x()+2*k[i+1].x();   // TODO: Fix the r implementation to depend on xy
     }
 
     /*right segment*/
-    a[N-1].x() = 2;
-    b[N-1].x() = 7;
-    c[N-1].x() = 0;
-    r[N-1].x() = 8*k[N-1].x()+k[N].x();
-
-    a[N-1].y() = 2;
-    b[N-1].y() = 7;
-    c[N-1].y() = 0;
-    r[N-1].y() = 8*k[N-1].y()+k[N].y();
+    a[N-1].x() = 2; b[N-1].x() = 7; c[N-1].x() = 0; r[N-1].x() = 8*k[N-1].x()+k[N].x();
+    a[N-1].y() = 2; b[N-1].y() = 7; c[N-1].y() = 0; r[N-1].y() = 8*k[N-1].y()+k[N].y();
+    // a[N-1].z() = 2; b[N-1].z() = 7; c[N-1].z() = 0; r[N-1].z() = 8*k[N-1].z()+k[N].z();
 
 
     /*solves Ax=b with the Thomas algorithm (from Wikipedia)*/
@@ -96,20 +75,20 @@ bool BezierSpline::ComputeSpline()
         double m;
 
         m = a[i].x()/b[i-1].x();
-        b[i].x() = b[i].x() - m * c[i - 1].x();
-        r[i].x() = r[i].x() - m * r[i-1].x();
+        b[i].x() = b[i].x()-m*c[i-1].x();
+        r[i].x() = r[i].x()-m*r[i-1].x();
 
         m = a[i].y()/b[i-1].y();
-        b[i].y() = b[i].y() - m * c[i - 1].y();
-        r[i].y() = r[i].y() - m * r[i-1].y();
+        b[i].y() = b[i].y()-m*c[i-1].y();
+        r[i].y() = r[i].y()-m*r[i-1].y();
     }
 
     _p1Points[N-1].x() = r[N-1].x()/b[N-1].x();
     _p1Points[N-1].y() = r[N-1].y()/b[N-1].y();
     for (int i = N - 2; i >= 0; --i)
     {
-        _p1Points[i].x() = (r[i].x() - c[i].x() * _p1Points[i+1].x()) / b[i].x();
-        _p1Points[i].y() = (r[i].y() - c[i].y() * _p1Points[i+1].y()) / b[i].y();
+        _p1Points[i].x() = (r[i].x()-c[i].x()*_p1Points[i+1].x()) /b[i].x();
+        _p1Points[i].y() = (r[i].y()-c[i].y()* _p1Points[i+1].y()) /b[i].y();
     }
 
     /*we have p1, now compute p2*/
