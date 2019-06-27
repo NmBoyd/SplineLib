@@ -30,7 +30,7 @@ class Spline
         Spline()
         {
             points_.reserve(NOM_SIZE);
-            elim_colinear_pts_ = true ;
+            elim_colinear_pts_ = false ;
         }
         ~Spline(){}
 

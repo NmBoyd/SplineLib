@@ -1,0 +1,46 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-v",
+                "src/spline.cpp",
+                "src/bezier_spline.cpp",
+                "src/cubic_spline.cpp",
+                "src/main.cpp",
+                "-o",
+                "${workspaceFolderBasename}",
+                "-std=c++11",
+                "-I/usr/include/python2.7",
+                "-lpython2.7"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "run",
+            "type": "shell",
+            "command": "./${workspaceFolderBasename}",
+            "dependsOn": [
+                "build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "g++ build active file",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "/usr/bin"
+            }
+        }
+    ]
+}
