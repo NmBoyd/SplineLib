@@ -6,6 +6,7 @@
 #include <tuple>
 #include <vector>
 #include <math.h>
+#include <array>
 #include <assert.h>
 // externals 
 #include <eigen3/Eigen/Dense>

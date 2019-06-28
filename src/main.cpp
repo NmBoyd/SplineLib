@@ -77,6 +77,7 @@ int main(int argc, char** argv)
         b_pathc[i] = b_spline.GetCurvatureProfile()[i];
         t[i] = i/(double)divisions;
     }
+
     for(int i=0;i<c_pathx.size();++i)
     {
         c_pathx[i] = c_spline.GetPositionProfile()[i].x();
@@ -87,6 +88,8 @@ int main(int argc, char** argv)
         c_pathay[i] = c_spline.GetAccelerationProfile()[i].y();
         c_pathc[i] = c_spline.GetCurvatureProfile()[i];
     }
+    std::cout << c_spline.EvaluateCurveLength() << std::endl;
+
     matplotlibcpp::figure(1);
     matplotlibcpp::plot(x_orig, y_orig,"x");
     matplotlibcpp::plot(c_pathx, c_pathy,"r-");   // show plots
@@ -96,10 +99,10 @@ int main(int argc, char** argv)
     matplotlibcpp::plot(t, c_pathvx, "r-");   
     matplotlibcpp::figure(3);
     matplotlibcpp::plot(t, b_pathax);   
-    matplotlibcpp::plot(t, c_pathvx, "r-");  
+    matplotlibcpp::plot(t, c_pathax, "r-");  
     matplotlibcpp::figure(4);
     matplotlibcpp::plot(t, b_pathc);   
-    matplotlibcpp::plot(t, c_pathvx, "r-"); 
+    matplotlibcpp::plot(t, c_pathc, "r-"); 
     matplotlibcpp::show();
 
 }

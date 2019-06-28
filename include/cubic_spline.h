@@ -31,14 +31,18 @@ class CubicSpline : public SplineCurve
          *  in Robert Sedgewick's "Algorithms in C++".
          *
          */
-        Vector3d x_col_[NOM_SIZE][4]; // column full of constants to solve for trinomial
-        // std::vector<Vector3d> setpoints_;
+        std::array<std::array<Vector3d, NOM_SIZE>, 4> x_col_; // column full of constants to solve for trinomial
+        std::array<double, NOM_SIZE> spline_lengths_;
 
     public:
-        // Vector3d SplineAtTime(float t);
-        // float ArcLengthIntegrand(int splineIndex, float t);
-        // float Integrate(int splineIndex, float t);
-        // Vector3d ConstVelocitySplineAtTime(float t);
+        Vector3d SplineAtTime(double t);
+        double SplineArcLengthIntegrand(int spline, double t);
+        double ArcLengthIntegrand(double t);
+        double IntegrateSpline(int spline, double t);
+        double IntegrateCurve(float t0, float t1);
+        Vector3d ConstVelocitySplineAtTime(double t);
+        double EvaluateCurveLength();
+
         CubicSpline();
         ~CubicSpline(){}
         /**

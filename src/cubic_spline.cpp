@@ -16,7 +16,6 @@ std::tuple<Vector3d,Vector3d,Vector3d,double>  CubicSpline::Evaluate(int segment
 
     Vector3d spline_positions = x_col_[segment][0] + x_col_[segment][1]*t + x_col_[segment][2]*t*t + x_col_[segment][3]*t*t*t;
     Vector3d spline_velocity = x_col_[segment][1] + x_col_[segment][2]*2*t + x_col_[segment][3]*3*t*t;
-    
     Vector3d spline_acceleration = x_col_[segment][2]*2 + x_col_[segment][3]*6*t;
    
     // TODO: Should be more unsteady
@@ -77,84 +76,128 @@ bool CubicSpline::ComputeSpline()
     return true;
 }
 
-// float ArcLengthIntegrand(int spline, float t)
-// {
-//     float tt = t*t;
+double CubicSpline::SplineArcLengthIntegrand(int spline, double t)
+{
+    Vector3d dv = x_col_[spline][1] + 2*x_col_[spline][2]*t + 3*x_col_[spline][3]*t*t;
+    return sqrt(dv.x()*dv.x() + dv.y()*dv.y() + dv.z()*dv.z());
+}
 
-//     Vector3d dv = m_coeffs[spline][1] + 2 * m_coeffs[spline][2] * t + 3 * m_coeffs[spline][3] * tt;
-//     float xx = dv.x*dv.x;
-//     float yy = dv.y*dv.y;
-//     float zz = dv.z*dv.z;
+double CubicSpline::ArcLengthIntegrand( double t)
+{
+    if (t < 0)
+        return SplineArcLengthIntegrand(0, t);
 
-//     return sqrt(xx + yy + zz);
-// }
+    if (t >= GetPoints().size()-1)
+        return SplineArcLengthIntegrand(GetPoints().size()-1, fmod(t, 1));
 
-// // Composite Simpson's Rule, Burden & Faires - Numerical Analysis 9th, algorithm 4.1
-// float Integrate(int spline, float t)
-// {
-//     int n = 16;
-//     float h = t / n;
-//     float XI0 = ArcLengthIntegrand(spline, t);
-//     float XI1 = 0;
-//     float XI2 = 0;
+    return SplineArcLengthIntegrand((int)t, t - (int)t);
+}
 
-//     for (int i = 0; i < n; i++)
-//     {
-//         float X = i*h;
-//         if (i % 2 == 0)
-//             XI2 += ArcLengthIntegrand(spline, X);
-//         else
-//             XI1 += ArcLengthIntegrand(spline, X);
-//     }
+// Composite Simpson's Rule, Burden & Faires - Numerical Analysis 9th, algorithm 4.1
+// Integrate spline 
+double CubicSpline::IntegrateSpline(int spline, double t)
+{
 
-//     float XI = h * (XI0 + 2 * XI2 + 4 * XI1) * (1.0f / 3);
-//     return XI;
-// }
+    assert(t >= -1);
+    assert(t <= 2);
+    int n = GetPoints().size();
+    double h = t / n;
+    double XI0 = SplineArcLengthIntegrand(spline, t);
+    double XI1 = 0;
+    double XI2 = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        double X = i*h;
+        if (i % 2 == 0)
+            XI2 += SplineArcLengthIntegrand(spline, X);
+        else
+            XI1 += SplineArcLengthIntegrand(spline, X);
+    }
+    double XI = h*(XI0 + 2*XI2 + 4*XI1) * (1.0f/3);
+    return XI;
+}
+
+double CubicSpline::IntegrateCurve(float t0, float t1)
+{
+    float multiplier = 1;
+    if (t0 > t1)
+    {
+        std::swap(t0, t1);
+        multiplier = -1;
+    }
+
+    int first_spline = (int)t0;
+    if (first_spline < 0)
+        first_spline = 0;
+
+    int last_spline = (int)t1;
+    if (last_spline >= GetPoints().size()-1)
+        last_spline = GetPoints().size()-2;
+
+    if (first_spline == last_spline)
+        return (IntegrateSpline(last_spline, t1 - last_spline) - IntegrateSpline(first_spline, t0 - first_spline)) * multiplier;
+
+    float sum = spline_lengths_[first_spline] - IntegrateSpline(first_spline, t0);
+
+    for (int k = first_spline+1; k < last_spline; k++)
+        sum += spline_lengths_[k];
+
+    sum += IntegrateSpline(last_spline, t1 - last_spline);
+
+    return sum * multiplier;
+}
+
+// Using Simpsons Rule
+double CubicSpline::EvaluateCurveLength()
+{
+    float sum = 0;
+
+    for (int k = 0; k < spline_lengths_.size(); k++)
+        sum += spline_lengths_[k];
+
+    return sum;
+}
 
 // Vector3d ConstVelocitySplineAtTime(float t)
-// {ze();++i)
-    // {
-    //     c_pathx[i] = c_spline.GetPositionProfile()[i].x();
-    //     c_pathy[i] = c_spline.GetPositionProfile()[i].y();
-    //     c_pathvx[i] = c_spline.GetVelocityProfile()[i].x();
-    //     c_pathvy[i] = c_spline.GetVelocityProfile()[i].y();
-    //     c_pathax[i] = c_spline.GetAccelerationProfile()[i].x();
-    //     c_pathay[i] = c_spline.GetAccelerationProfile()[i].y();
-    // }
-//     int spline = 0;ze();++i)
-    // {
-    //     c_pathx[i] = c_spline.GetPositionProfile()[i].x();
-    //     c_pathy[i] = c_spline.GetPositionProfile()[i].y();
-    //     c_pathvx[i] = c_spline.GetVelocityProfile()[i].x();
-    //     c_pathvy[i] = c_spline.GetVelocityProfile()[i].y();
-    //     c_pathax[i] = c_spline.GetAccelerationProfile()[i].x();
-    //     c_pathay[i] = c_spline.GetAccelerationProfile()[i].y();
-    // }
-//     while (t > m_lengths[ze();++i)
-    // {
-    //     c_pathx[i] = c_spline.GetPositionProfile()[i].x();
-    //     c_pathy[i] = c_spline.GetPositionProfile()[i].y();
-    //     c_pathvx[i] = c_spline.GetVelocityProfile()[i].x();
-    //     c_pathvy[i] = c_spline.GetVelocityProfile()[i].y();
-    //     c_pathax[i] = c_spline.GetAccelerationProfile()[i].x();
-    //     c_pathay[i] = c_spline.GetAccelerationProfile()[i].y();
-    // }spline])
-//     {
-//         t -= m_lengths[spline];
-//         spline += 1;
-//     }
+// {
+//     float total_length = GetTotalLength();
+// 		float desired_distance = fmod(t * speed, total_length);
 
-//     float s = t / m_lengths[spline]; // Here's our initial guess.
+// 		float t_last = SPLINE_POINTS * desired_distance / total_length;
+// 		float t_next = t_last;
 
-//     // Do some Newton-Rhapsons.
-//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
-//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
-//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
-//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
-//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
-//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
+// 		auto g = [this, desired_distance](float t) -> float {
+// 			return SimpsonsRule(0, t) - desired_distance;
+// 		};
 
-//     return SplineAtTime(spline + s);
+// 		auto L = [this](float t) -> float {
+// 			return ArcLengthIntegrand(t);
+// 		};
+
+// 		float t_max = SPLINE_POINTS;
+// 		float t_min = -0.1f;
+
+// 		while (t_max - t_min > 0.5f)
+// 		{
+// 			float t_mid = (t_max + t_min)/2;
+// 			if (g(t_min) * g(t_mid) < 0)
+// 				t_max = t_mid;
+// 			else
+// 				t_min = t_mid;
+// 		}
+
+// 		t_next = (t_max + t_min)/2;
+
+// 		do {
+// 			t_last = t_next;
+// 			t_next = t_last - g(t_last) / L(t_last);
+// 		} while(fabs(t_last - t_next) > 0.001f);
+
+// 		// Because of root finding it may be slightly negative sometimes.
+// 		VAssert(t_next >= -0.1f && t_next <= 999999);
+
+//  return SplineAtTime(t_next);
 // }
 
 void CubicSpline::PrintDerivedData()
@@ -185,6 +228,7 @@ bool CubicSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
             accel_profile_.push_back(std::get<2>(state_info));
             curvature_profile_.push_back(std::get<3>(state_info));
         }
+        spline_lengths_[idx] = IntegrateSpline(idx, 1);
     }
 
     return true;
