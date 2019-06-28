@@ -19,10 +19,10 @@ class SplineCurve
         
     protected:
 
-        std::vector<Vector3d> pos_profile_;         // Curve of all positions. 
+        std::vector<Vector3d> pos_profile_;         // Curve of all positions 
         std::vector<Vector3d> vel_profile_;         // Curve velocity profile
         std::vector<Vector3d> accel_profile_;       // Curve acceleration profile
-        std::vector<double>   curvature_profile_;   // Curvature of spline between knots. 
+        std::vector<double>   curvature_profile_;   // Curvature (k) of spline between knots. 
                                                     // Each curvature index represents a segment
         /* Override */
         virtual void ResetDerived() = 0;

@@ -2,10 +2,7 @@
 
 CubicSpline::CubicSpline()
 {
-    x_col_.reserve(NOM_SIZE);
-    b_col_.reserve(NOM_SIZE);
-    diag_elems_.reserve(NOM_SIZE);
-    off_diag_elems_.reserve(NOM_SIZE);
+    
 }
 
 
@@ -17,64 +14,66 @@ std::tuple<Vector3d,Vector3d,Vector3d,double>  CubicSpline::Evaluate(int segment
     // assert(segment >= 0);
     // assert(segment < (points.size()));
 
-    const double ONE_SIXTH = 1.0/6.0;
-    double oneMinust = 1.0-t;
-    double t3Minust = t*t*t-t;
-    double oneMinust3minust = oneMinust*oneMinust*oneMinust-oneMinust;
-    double deltaX = points[segment+1].x()-points[segment].x();
-    double yValue = t*points[segment+1].y() + 
-                    oneMinust*points[segment].y() +
-                    ONE_SIXTH*deltaX*deltaX*(t3Minust*x_col_[segment+1]-oneMinust3minust*x_col_[segment]);
-    double xValue = t*(points[segment+1].x()-points[segment].x())+points[segment].x();
-    double zValue = 0;
-
-    return std::make_tuple( Vector3d(xValue,yValue,zValue), 
-                            Vector3d(0.0,0.0,0.0),
-                            Vector3d(0.0,0.0,0.0),
-                            0.0 );
+    Vector3d spline_positions = x_col_[segment][0] + x_col_[segment][1]*t + x_col_[segment][2]*t*t + x_col_[segment][3]*t*t*t;
+    Vector3d spline_velocity = x_col_[segment][1] + x_col_[segment][2]*2*t + x_col_[segment][3]*3*t*t;
+    
+    Vector3d spline_acceleration = x_col_[segment][2]*2 + x_col_[segment][3]*6*t;
+   
+    // TODO: Should be more unsteady
+    double   spline_curvature = (spline_velocity.x()*spline_acceleration.y())-(spline_velocity.y()*spline_acceleration.x())/
+                                pow((spline_velocity.x()*spline_velocity.x()+spline_velocity.y()*spline_velocity.y()),(3/2));
+    
+    return std::make_tuple( spline_positions, 
+                            spline_velocity,
+                            spline_acceleration,
+                            spline_curvature );
 }
 
 void CubicSpline::ResetDerived()
 {
-    diag_elems_.clear();
-    x_col_.clear();
-    b_col_.clear();
-    off_diag_elems_.clear();
+    // for(int i=0;i<4;i++)
+    //     x_col_[i].clear();
+    // setpoints_.clear();
 }
 
 bool CubicSpline::ComputeSpline()
 {
     const std::vector<Vector3d> p = GetPoints();
 
-    b_col_.resize(p.size());
-    x_col_.resize(p.size());
-    diag_elems_.resize(p.size());
-    
-    for(int idx = 1;idx < p.size(); ++idx)
+    int n = p.size()-1;
+
+    Vector3d a[p.size()];
+    for (int i = 1; i < n; i++)
+        a[i] = 3*((p[i+1] - 2*p[i] + p[i-1]));
+
+    float l[p.size()];
+    float mu[p.size()];
+    Vector3d z[p.size()];
+
+    l[0] = l[n] = 1;
+    mu[0] = 0;
+    z[0] = z[n] = Vector3d(0.0, 0.0, 0.0);
+    x_col_[n][2] = Vector3d(0.0, 0.0, 0.0);
+
+    for (int i = 1; i <= n-1; i++)
     {
-        diag_elems_[idx] = 2*(p[idx+1].x()-p[idx-1].x());
-    }
-    for(int idx = 0; idx < p.size(); ++idx)
-    {
-        off_diag_elems_[idx] = p[idx+1].x()-p[idx].x();
-    }
-    for(int idx = 1; idx < p.size(); ++idx)
-    {
-        b_col_[idx] = 6.0*((p[idx+1].y()-p[idx].y())/off_diag_elems_[idx] - 
-                            (p[idx].y()-p[idx-1].y())/off_diag_elems_[idx-1]);
+        l[i] = 4 - mu[i-1];
+        mu[i] = 1 / l[i];
+        z[i] = (a[i] - z[i-1]) / l[i];
     }
 
-    x_col_[0] = 0.0;
-    x_col_[p.size()-1] = 0.0;
-    for(int idx = 1; idx < p.size()-1; ++idx)
+    for (int i = 0; i < p.size(); i++)
+        x_col_[i][0] = p[i];    // set all the "a" variables to the initial position
+     
+
+    for (int j = n-1; j >= 0; j--)
     {
-        b_col_[idx+1] = b_col_[idx+1] - b_col_[idx]*off_diag_elems_[idx]/diag_elems_[idx];
-        diag_elems_[idx+1] = diag_elems_[idx+1] - off_diag_elems_[idx]*off_diag_elems_[idx];
+        x_col_[j][2] = z[j] - mu[j] * x_col_[j+1][2];
+        x_col_[j][3] = (1.0f / 3.0f)*(x_col_[j+1][2] - x_col_[j][2]);
+        x_col_[j][1] = p[j + 1] - p[j] - x_col_[j][2] - x_col_[j][3];
     }
-    for(int idx = (int)p.size()-2; idx > 0; --idx)
-    {
-        x_col_[idx] = (b_col_[idx] - off_diag_elems_[idx]*x_col_[idx+1])/diag_elems_[idx];
-    }
+    
+    // Solved for the x column coefficients (a,b,c,d in polynomial)
     return true;
 }
 
@@ -113,9 +112,33 @@ bool CubicSpline::ComputeSpline()
 // }
 
 // Vector3d ConstVelocitySplineAtTime(float t)
-// {
-//     int spline = 0;
-//     while (t > m_lengths[spline])
+// {ze();++i)
+    // {
+    //     c_pathx[i] = c_spline.GetPositionProfile()[i].x();
+    //     c_pathy[i] = c_spline.GetPositionProfile()[i].y();
+    //     c_pathvx[i] = c_spline.GetVelocityProfile()[i].x();
+    //     c_pathvy[i] = c_spline.GetVelocityProfile()[i].y();
+    //     c_pathax[i] = c_spline.GetAccelerationProfile()[i].x();
+    //     c_pathay[i] = c_spline.GetAccelerationProfile()[i].y();
+    // }
+//     int spline = 0;ze();++i)
+    // {
+    //     c_pathx[i] = c_spline.GetPositionProfile()[i].x();
+    //     c_pathy[i] = c_spline.GetPositionProfile()[i].y();
+    //     c_pathvx[i] = c_spline.GetVelocityProfile()[i].x();
+    //     c_pathvy[i] = c_spline.GetVelocityProfile()[i].y();
+    //     c_pathax[i] = c_spline.GetAccelerationProfile()[i].x();
+    //     c_pathay[i] = c_spline.GetAccelerationProfile()[i].y();
+    // }
+//     while (t > m_lengths[ze();++i)
+    // {
+    //     c_pathx[i] = c_spline.GetPositionProfile()[i].x();
+    //     c_pathy[i] = c_spline.GetPositionProfile()[i].y();
+    //     c_pathvx[i] = c_spline.GetVelocityProfile()[i].x();
+    //     c_pathvy[i] = c_spline.GetVelocityProfile()[i].y();
+    //     c_pathax[i] = c_spline.GetAccelerationProfile()[i].x();
+    //     c_pathay[i] = c_spline.GetAccelerationProfile()[i].y();
+    // }spline])
 //     {
 //         t -= m_lengths[spline];
 //         spline += 1;
@@ -160,6 +183,7 @@ bool CubicSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
             pos_profile_.push_back(std::get<0>(state_info));    // this is backwards
             vel_profile_.push_back(std::get<1>(state_info));
             accel_profile_.push_back(std::get<2>(state_info));
+            curvature_profile_.push_back(std::get<3>(state_info));
         }
     }
 

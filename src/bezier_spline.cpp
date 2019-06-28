@@ -16,11 +16,12 @@ std::tuple<Vector3d,Vector3d,Vector3d,double> BezierSpline::Evaluate(int seg, do
     Vector3d spline_positions = omt*omt*omt*p0 + 3*omt*omt*t*p1 +3*omt*t*t*p2+t*t*t*p3;
     Vector3d spline_velocity = 3*omt*omt*(p1-p0)+6*t*omt*(p2-p1)+3*t*t*(p3-p2);
     Vector3d spline_acceleration = 6*omt*(p2-2*p1+p0)+6*t*(p3-2*p2+p1);
-    
+    double   spline_curvature = (spline_velocity.x()*spline_acceleration.y())-(spline_velocity.y()*spline_acceleration.x())/
+                                pow((spline_velocity.x()*spline_velocity.x()+spline_velocity.y()*spline_velocity.y()),(3/2));
     return std::make_tuple( spline_positions, 
                             spline_velocity,
                             spline_acceleration,
-                            0.0 );
+                            spline_curvature );
 }
 
 void BezierSpline::ResetDerived()
@@ -156,7 +157,7 @@ bool BezierSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
             pos_profile_.push_back(std::get<0>(state_info));    // this is backwards
             vel_profile_.push_back(std::get<1>(state_info));
             accel_profile_.push_back(std::get<2>(state_info));
-
+            curvature_profile_.push_back(std::get<3>(state_info));
         }
     }
     return true;

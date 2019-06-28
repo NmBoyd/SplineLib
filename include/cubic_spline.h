@@ -20,21 +20,19 @@ class CubicSpline : public SplineCurve
          * general structure (for six  waypoints) looks like:
          *
          *
-         *  |  d1  u1   0   0   0  |      | c1 |    | b1 |
-         *  |  u1  d2   u2  0   0  |      | c2 |    | b2 |
-         *  |  0   u2   d3  u3  0  |   *  | c3 |  = | b3 |
-         *  |  0   0    u3  d4  u4 |      | c4 |    | b4 |
-         *  |  0   0    0   u4  d5 |      | c5 |    | b5 |
+         *  |  d1  u1   0   0   0  |      | x1 |    | b1 |
+         *  |  u1  d2   u2  0   0  |      | x2 |    | b2 |
+         *  |  0   u2   d3  u3  0  |   *  | x3 |  = | b3 |
+         *  |  0   0    u3  d4  u4 |      | x4 |    | b4 |
+         *  |  0   0    0   u4  d5 |      | x5 |    | b5 |
          *
          *
          *  The general derivation for this can be found
          *  in Robert Sedgewick's "Algorithms in C++".
          *
          */
-        std::vector<double> x_col_; // column full of constants to solve for trinomial
-        std::vector<double> b_col_;
-        std::vector<double> diag_elems_;
-        std::vector<double> off_diag_elems_;
+        Vector3d x_col_[NOM_SIZE][4]; // column full of constants to solve for trinomial
+        // std::vector<Vector3d> setpoints_;
 
     public:
         // Vector3d SplineAtTime(float t);
