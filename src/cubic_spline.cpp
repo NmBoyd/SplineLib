@@ -9,13 +9,13 @@ CubicSpline::CubicSpline()
 }
 
 
-Vector3d CubicSpline::Evaluate(int segment, double t)
+std::tuple<Vector3d,Vector3d,Vector3d,double>  CubicSpline::Evaluate(int segment, double t)
 {
     const std::vector<Vector3d>& points = GetPoints();
-    assert(t >= 0);
-    assert(t <= 1.0);
-    assert(segment >= 0);
-    assert(segment < (points.size()));
+    // assert(t >= 0);
+    // assert(t <= 1.0);
+    // assert(segment >= 0);
+    // assert(segment < (points.size()));
 
     const double ONE_SIXTH = 1.0/6.0;
     double oneMinust = 1.0-t;
@@ -27,7 +27,11 @@ Vector3d CubicSpline::Evaluate(int segment, double t)
                     ONE_SIXTH*deltaX*deltaX*(t3Minust*x_col_[segment+1]-oneMinust3minust*x_col_[segment]);
     double xValue = t*(points[segment+1].x()-points[segment].x())+points[segment].x();
     double zValue = 0;
-    return Vector3d(xValue,yValue,zValue);
+
+    return std::make_tuple( Vector3d(xValue,yValue,zValue), 
+                            Vector3d(0.0,0.0,0.0),
+                            Vector3d(0.0,0.0,0.0),
+                            0.0 );
 }
 
 void CubicSpline::ResetDerived()
@@ -74,33 +78,90 @@ bool CubicSpline::ComputeSpline()
     return true;
 }
 
+// float ArcLengthIntegrand(int spline, float t)
+// {
+//     float tt = t*t;
+
+//     Vector3d dv = m_coeffs[spline][1] + 2 * m_coeffs[spline][2] * t + 3 * m_coeffs[spline][3] * tt;
+//     float xx = dv.x*dv.x;
+//     float yy = dv.y*dv.y;
+//     float zz = dv.z*dv.z;
+
+//     return sqrt(xx + yy + zz);
+// }
+
+// // Composite Simpson's Rule, Burden & Faires - Numerical Analysis 9th, algorithm 4.1
+// float Integrate(int spline, float t)
+// {
+//     int n = 16;
+//     float h = t / n;
+//     float XI0 = ArcLengthIntegrand(spline, t);
+//     float XI1 = 0;
+//     float XI2 = 0;
+
+//     for (int i = 0; i < n; i++)
+//     {
+//         float X = i*h;
+//         if (i % 2 == 0)
+//             XI2 += ArcLengthIntegrand(spline, X);
+//         else
+//             XI1 += ArcLengthIntegrand(spline, X);
+//     }
+
+//     float XI = h * (XI0 + 2 * XI2 + 4 * XI1) * (1.0f / 3);
+//     return XI;
+// }
+
+// Vector3d ConstVelocitySplineAtTime(float t)
+// {
+//     int spline = 0;
+//     while (t > m_lengths[spline])
+//     {
+//         t -= m_lengths[spline];
+//         spline += 1;
+//     }
+
+//     float s = t / m_lengths[spline]; // Here's our initial guess.
+
+//     // Do some Newton-Rhapsons.
+//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
+//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
+//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
+//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
+//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
+//     s = s - (Integrate(spline, s) - t) / ArcLengthIntegrand(spline, s);
+
+//     return SplineAtTime(spline + s);
+// }
+
 void CubicSpline::PrintDerivedData()
 {
-    std::cout << " Control Points " << std::endl;\
+    std::cout << " Control Points " << std::endl;
 }
 
-std::vector<Vector3d> CubicSpline::BuildSpline(std::vector<Vector3d> path, int divisions)
+bool CubicSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
 {
-    assert(path.size() > 2);
-
-   
-    for(int idx = 0; idx<path.size(); idx++)
+    assert(setpoints.size() > 2);
+    
+    for(int idx = 0; idx<setpoints.size(); idx++)
     {
-        AddPoint(path[idx]);
+        AddPoint(setpoints[idx]);
     }
-    path.clear();
     // Smooth them.
     ComputeSpline();
     
-    // Push them back in.
-    for(int idx = GetPoints().size()-1; idx >= 0; --idx)
+    // Loop through all segments and create the overall spline
+    for(int idx = 0; idx < GetPoints().size()-1; idx++)
     {
-        for(int division = divisions-1; division >= 0; --division)
+        for(int division = 0; division <= divisions; division++)
         {
             double t = division*1.0/divisions;
-            path.push_back(Evaluate(idx, t));
+            std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = Evaluate(idx, t);
+            pos_profile_.push_back(std::get<0>(state_info));    // this is backwards
+            vel_profile_.push_back(std::get<1>(state_info));
+            accel_profile_.push_back(std::get<2>(state_info));
         }
     }
 
-    return path;
+    return true;
 }

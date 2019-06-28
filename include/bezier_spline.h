@@ -1,28 +1,29 @@
 #include "spline.h"
 
-/* Bezier Spline Implementation
+/* Cubic Bezier Spline (B-Spline) Implementation
  * Based on this article:
  * http://www.particleincell.com/blog/2012/bezier-splines/
  */
-class BezierSpline : public Spline
+class BezierSpline : public SplineCurve
 {
     private:
-    std::vector<Vector3d> _p1Points;
-    std::vector<Vector3d> _p2Points;
+        std::vector<Vector3d> p1_points_;   // First Control Points for a curve
+        std::vector<Vector3d> p2_points_;   // Control Points for the curve
+       
     public:
-    BezierSpline()
-    {
-        _p1Points.reserve(NOM_SIZE);
-        _p2Points.reserve(NOM_SIZE);
-    }
+        BezierSpline()
+        {
+            p1_points_.reserve(NOM_SIZE);
+            p2_points_.reserve(NOM_SIZE);
+        }
 
-    /* Evaluate the spline for the ith segment
-        * for parameter.  The value of parameter t must
-        * be between 0 and 1.
-        */
-    Vector3d Evaluate(int seg, double t) override;
-    void ResetDerived() override;
-    bool ComputeSpline() override;
-    void PrintDerivedData() override;
-    std::vector<Vector3d> BuildSpline(std::vector<Vector3d> path, int divisions) override;
+        /* Evaluate the spline for the ith segment
+            * for parameter.  The value of parameter t must
+            * be between 0 and 1.
+            */
+        std::tuple<Vector3d,Vector3d,Vector3d,double>  Evaluate(int seg, double t) override;
+        void ResetDerived() override;
+        bool ComputeSpline() override;
+        void PrintDerivedData() override;
+       bool BuildSpline(std::vector<Vector3d> path, int divisions) override;
 };

@@ -1,13 +1,13 @@
 #include "../include/spline.h"
 
 /* Clear out data */
-        void Spline::Reset()
+        void SplineCurve::Reset()
         {
             points_.clear();
             ResetDerived();
         }
 
-        void  Spline::AddPoint(const Vector3d& pt)
+        void  SplineCurve::AddPoint(const Vector3d& pt)
         {
             // if new point is colinear with previous pts remove the last pt
             // and replace it with this one 
@@ -30,7 +30,7 @@
 
         }
 
-        void  Spline::PrintData(int segments=5)
+        void  SplineCurve::PrintData(int segments=5)
         {
             assert(segments>1);
             std::cout << "Original Points (" << points_.size() << ")" << std::endl;
@@ -51,9 +51,10 @@
                 for(int tIdx = 0; tIdx < segments+1; ++tIdx)
                 {
                     double t = tIdx*1.0/segments;
+                    std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = Evaluate(idx, t);
                     std::cout << "[" << tIdx << "]" << "   ";
                     std::cout << "[" << t*100 << "%]" << "   ";
-                    std::cout << " --> " << Evaluate(idx,t);
+                    std::cout << " --> " << std::get<0>(state_info);
                     std::cout << std::endl;
                 }
             }

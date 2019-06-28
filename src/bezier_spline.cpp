@@ -1,27 +1,32 @@
 
 #include "../include/bezier_spline.h"
 //http://www2.informatik.uni-freiburg.de/~lau/students/Sprunk2008.pdf
-Vector3d BezierSpline::Evaluate(int seg, double t)
+std::tuple<Vector3d,Vector3d,Vector3d,double> BezierSpline::Evaluate(int seg, double t)
 {
     double omt = 1.0 - t;
 
+    // Based on the two knots (setpoints) and 2 control points,
+    // create a spline for a given segment
     Vector3d p0(GetPoints()[seg]);
-    Vector3d p1(_p1Points[seg]);
-    Vector3d p2(_p2Points[seg]);
+    Vector3d p1(p1_points_[seg]);
+    Vector3d p2(p2_points_[seg]);
     Vector3d p3(GetPoints()[seg+1]);
 
     /* Compute the bezier curve in 3-Space */
-    Vector3d cubic_bezier_curve = omt*omt*omt*p0 + 3*omt*omt*t*p1 +3*omt*t*t*p2+t*t*t*p3;
-    cubic_bezier_curve.z()=0;
-    return cubic_bezier_curve;
+    Vector3d spline_positions = omt*omt*omt*p0 + 3*omt*omt*t*p1 +3*omt*t*t*p2+t*t*t*p3;
+    Vector3d spline_velocity = 3*omt*omt*(p1-p0)+6*t*omt*(p2-p1)+3*t*t*(p3-p2);
+    Vector3d spline_acceleration = 6*omt*(p2-2*p1+p0)+6*t*(p3-2*p2+p1);
+    
+    return std::make_tuple( spline_positions, 
+                            spline_velocity,
+                            spline_acceleration,
+                            0.0 );
 }
 
-/* Clear out all the data.
-*/
 void BezierSpline::ResetDerived()
 {
-    _p1Points.clear();
-    _p2Points.clear();
+    p1_points_.clear();
+    p2_points_.clear();
 }
 
 /*computes control points given knots K. */
@@ -30,17 +35,18 @@ bool BezierSpline::ComputeSpline()
     const std::vector<Vector3d>& k = GetPoints();  
 
     int N = (int)k.size()-1;
-    _p1Points.resize(N);
-    _p2Points.resize(N);
+    p1_points_.resize(N);
+    p2_points_.resize(N);
     if(N == 0)
         return false;
 
     if(N == 1)
     {  // Only 2 points...just create a straight line.
         // Constraint:  3*P1 = 2*P0 + P3
-        _p1Points[0] = (2.0/3.0*k[0] + 1.0/3.0*k[1]);
+        p1_points_[0] = (2.0/3.0*k[0] + 1.0/3.0*k[1]);
         // Constraint:  P2 = 2*P1 - P0
-        _p2Points[0] = 2.0*_p1Points[0] - k[0];
+        p2_points_[0] = 2.0*p1_points_[0] - k[0];
+        curvature_profile_.push_back(0.0);
         return true;
     }
 
@@ -83,23 +89,23 @@ bool BezierSpline::ComputeSpline()
         r[i].y() = r[i].y()-m*r[i-1].y();
     }
 
-    _p1Points[N-1].x() = r[N-1].x()/b[N-1].x();
-    _p1Points[N-1].y() = r[N-1].y()/b[N-1].y();
-    for (int i = N - 2; i >= 0; --i)
+    p1_points_[N-1].x() = r[N-1].x()/b[N-1].x();
+    p1_points_[N-1].y() = r[N-1].y()/b[N-1].y();
+    for (int i = N - 2; i >= 0; i--)
     {
-        _p1Points[i].x() = (r[i].x()-c[i].x()*_p1Points[i+1].x()) /b[i].x();
-        _p1Points[i].y() = (r[i].y()-c[i].y()* _p1Points[i+1].y()) /b[i].y();
+        p1_points_[i].x() = (r[i].x()-c[i].x()*p1_points_[i+1].x()) /b[i].x();
+        p1_points_[i].y() = (r[i].y()-c[i].y()* p1_points_[i+1].y()) /b[i].y();
     }
 
     /*we have p1, now compute p2*/
     for (int i=0;i<N-1;i++)
     {
-        _p2Points[i].x()=2*k[i+1].x()-_p1Points[i+1].x();
-        _p2Points[i].y()=2*k[i+1].y()-_p1Points[i+1].y();
+        p2_points_[i].x()=2*k[i+1].x()-p1_points_[i+1].x();
+        p2_points_[i].y()=2*k[i+1].y()-p1_points_[i+1].y();
     }
 
-    _p2Points[N-1].x() = 0.5 * (k[N].x()+_p1Points[N-1].x());
-    _p2Points[N-1].y() = 0.5 * (k[N].y()+_p1Points[N-1].y());
+    p2_points_[N-1].x() = 0.5 * (k[N].x()+p1_points_[N-1].x());
+    p2_points_[N-1].y() = 0.5 * (k[N].y()+p1_points_[N-1].y());
 
     return true;
 }
@@ -107,39 +113,51 @@ bool BezierSpline::ComputeSpline()
 void BezierSpline::PrintDerivedData()
 {
     std::cout << " Control Points " << std::endl;
-    for(int idx = 0; idx < _p1Points.size(); idx++)
+    for(int idx = 0; idx < p1_points_.size(); idx++)
     {
         std::cout << "[" << idx << "]  ";
-        std::cout << "P1: " << _p1Points[idx];
+        std::cout << "P1: " << p1_points_[idx];
         std::cout << "   ";
-        std::cout << "P2: " << _p2Points[idx];
+        std::cout << "P2: " << p2_points_[idx];
         std::cout << std::endl;
     }
 }
 
-std::vector<Vector3d> BezierSpline::BuildSpline(std::vector<Vector3d> path, int divisions)
+bool BezierSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
 {
-    assert(path.size() > 2);
+    assert(setpoints.size() >= 2);
     
     
-    for(int idx = 0; idx<path.size(); idx++)
+    for(int idx = 0; idx<setpoints.size(); idx++)
     {
-        AddPoint(path[idx]);
+        AddPoint(setpoints[idx]);
     }
-    path.clear();
+    pos_profile_.clear();
     // Smooth them.
     ComputeSpline();
-    
     // Push them back in.
-    for(int idx = GetPoints().size()-1; idx >= 0; --idx)
+    // for(int idx = GetPoints().size()-2; idx >= 0; --idx)
+    // {
+    //     for(int division = divisions-1; division >= 0; --division)
+    //     {
+    //         double t = division*1.0/divisions;
+    //         std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = Evaluate(idx, t);
+    //         pos_profile_.push_back(std::get<0>(state_info));    // this is backwards
+    //         vel_profile_.push_back(std::get<1>(state_info));
+    //         accel_profile_.push_back(std::get<2>(state_info));
+    //     }
+    // }
+    for(int idx = 0; idx < GetPoints().size()-1; idx++)
     {
-        for(int division = divisions-1; division >= 0; --division)
+        for(int division = 0; division <= divisions; division++)
         {
             double t = division*1.0/divisions;
-            path.push_back(Evaluate(idx, t));
+            std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = Evaluate(idx, t);
+            pos_profile_.push_back(std::get<0>(state_info));    // this is backwards
+            vel_profile_.push_back(std::get<1>(state_info));
+            accel_profile_.push_back(std::get<2>(state_info));
+
         }
     }
-
-    return path;
-    
+    return true;
 }

@@ -3,8 +3,11 @@
 #include "spline.h"
 
 using namespace Eigen;
-    
-class CubicSpline : public Spline
+
+/** Cubic Spline 
+  * Works best with tightly packed waypoint list
+  * */
+class CubicSpline : public SplineCurve
 {
     private:   
         /* The system of linear equations found by solving
@@ -44,15 +47,15 @@ class CubicSpline : public Spline
          * Evaluate spline for the ith segment for x,y,z params. 
          * The value of param t must be (0<=t<=1)
          */
-        Vector3d Evaluate(int segment, double t) override;
+        std::tuple<Vector3d,Vector3d,Vector3d,double>  Evaluate(int segment, double t) override;
 
         /* Clear out all the data.
         */
         void ResetDerived() override;
         bool ComputeSpline() override;
         void PrintDerivedData() override;
-        std::vector<Vector3d> BuildSpline(std::vector<Vector3d> path, int divisions) override;
-
+        bool BuildSpline(std::vector<Vector3d> path, int divisions) override;
+        
 };
 
 #endif

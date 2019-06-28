@@ -3,6 +3,7 @@
 
 //internals
 #include <iostream>
+#include <tuple>
 #include <vector>
 #include <math.h>
 #include <assert.h>
@@ -10,13 +11,19 @@
 #include <eigen3/Eigen/Dense>
 
 using namespace Eigen;
-class Spline
+class SplineCurve
 {
     private:
-        std::vector<Vector3d> points_;  // array of points in plot
-        bool elim_colinear_pts_;    // removes colinear points if enabled
-
+        std::vector<Vector3d> points_;              // array of primary setpoints added to plot
+        bool elim_colinear_pts_;                    // removes colinear points if enabled
+        
     protected:
+
+        std::vector<Vector3d> pos_profile_;         // Curve of all positions. 
+        std::vector<Vector3d> vel_profile_;         // Curve velocity profile
+        std::vector<Vector3d> accel_profile_;       // Curve acceleration profile
+        std::vector<double>   curvature_profile_;   // Curvature of spline between knots. 
+                                                    // Each curvature index represents a segment
         /* Override */
         virtual void ResetDerived() = 0;
         enum
@@ -27,21 +34,31 @@ class Spline
     public:
          
         
-        Spline()
+        SplineCurve()
         {
             points_.reserve(NOM_SIZE);
             elim_colinear_pts_ = false ;
         }
-        ~Spline(){}
+        ~SplineCurve(){}
 
         const std::vector<Vector3d>& GetPoints() { return points_; }
+        const std::vector<Vector3d>& GetPositionProfile() { return pos_profile_; }
+        const std::vector<Vector3d>& GetVelocityProfile() { return vel_profile_; }
+        const std::vector<Vector3d>& GetAccelerationProfile() { return accel_profile_; }
+        const std::vector<double>&   GetCurvatureProfile() { return curvature_profile_; }
+       
         bool GetElimColinearPoints() { return elim_colinear_pts_; }
         void SetelimColinearPoints(bool elim) { elim_colinear_pts_ = true;}
 
         /* Virtual Spline Properties */
-        virtual Vector3d Evaluate(int seg, double t) = 0;
-        virtual std::vector<Vector3d> BuildSpline(std::vector<Vector3d> path, int divisions)=0;
+        // A segment is the curve between two setpoints
+        virtual std::tuple<Vector3d,Vector3d,Vector3d,double>  Evaluate(int seg, double t) = 0;
+        virtual bool BuildSpline(std::vector<Vector3d> setpoints, int divisions)=0;
         virtual bool ComputeSpline() = 0;
+
+        // virtual double ArcLengthIntegrand(int spline, double t) = 0;
+        // virtual double Integrate(int spline, double t) = 0;
+        // virtual Vector3d ConstVelocitySplineAtTime(double t) = 0;
         virtual void PrintDerivedData() {}
 
         void Reset();
