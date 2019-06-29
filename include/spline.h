@@ -29,7 +29,7 @@ class SplineCurve
         virtual void ResetDerived() = 0;
         enum
         {
-            NOM_SIZE = 32
+            NOM_SIZE = 32   // Max size of the waypoint list
         };
 
     public:
@@ -42,28 +42,55 @@ class SplineCurve
         }
         ~SplineCurve(){}
 
+        /* Getter and Setter Functions */
         const std::vector<Vector3d>& GetPoints() { return points_; }
         const std::vector<Vector3d>& GetPositionProfile() { return pos_profile_; }
         const std::vector<Vector3d>& GetVelocityProfile() { return vel_profile_; }
         const std::vector<Vector3d>& GetAccelerationProfile() { return accel_profile_; }
         const std::vector<double>&   GetCurvatureProfile() { return curvature_profile_; }
-       
         bool GetElimColinearPoints() { return elim_colinear_pts_; }
         void SetelimColinearPoints(bool elim) { elim_colinear_pts_ = true;}
 
         /* Virtual Spline Properties */
-        // A segment is the curve between two setpoints
+        /** Determine the cubic function for a spline segmenet between two setpoints 
+         * Evaluate will automatically be run from BuildSpline() to determine the cubic functions.
+         * 
+         * This function returns the state information regarding a specific spline segmeent
+         * and save the state information to create a motion profile for 
+         * position, velocity, acceleration, and curvature for all t in the list.
+         * Evaluate the spline for the ith segment for parameter. 
+         * The value of parameter t must be between 0 and 1.
+         * 
+         */
         virtual std::tuple<Vector3d,Vector3d,Vector3d,double>  Evaluate(int seg, double t) = 0;
+        /**This function will create your entire spline from an array of waypoints
+         * based on the number of steps(divisons) desired for the splines.
+         * 
+         * The maximum allowable size for a waypoint list is 32. Realistically it
+         * shouldn't need to go past that. But if necessary change NOM_SIZE.
+         */
         virtual bool BuildSpline(std::vector<Vector3d> setpoints, int divisions)=0;
+        
+        /**Triangulizes the "A" matrix of a cubic function*/
         virtual bool ComputeSpline() = 0;
 
         // virtual double ArcLengthIntegrand(int spline, double t) = 0;
         // virtual double Integrate(int spline, double t) = 0;
         // virtual Vector3d ConstVelocitySplineAtTime(double t) = 0;
+        
+        /** Prints out data pertaining to a specific spline type. */
         virtual void PrintDerivedData() {}
 
+        /** Erase the current waypoint list and state information */
         void Reset();
+
+        /** Adds a waypoint to the end of the spline list
+         * Make sure you run BuildSpline() again after you use this
+         * to update the relevant state information.
+        */
         void AddPoint(const Vector3d& pt);
+
+        /**Prints the data relating to a specific spline segment */
         void PrintData(int segments);
 
 };

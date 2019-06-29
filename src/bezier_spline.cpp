@@ -136,18 +136,7 @@ bool BezierSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
     pos_profile_.clear();
     // Smooth them.
     ComputeSpline();
-    // Push them back in.
-    // for(int idx = GetPoints().size()-2; idx >= 0; --idx)
-    // {
-    //     for(int division = divisions-1; division >= 0; --division)
-    //     {
-    //         double t = division*1.0/divisions;
-    //         std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = Evaluate(idx, t);
-    //         pos_profile_.push_back(std::get<0>(state_info));    // this is backwards
-    //         vel_profile_.push_back(std::get<1>(state_info));
-    //         accel_profile_.push_back(std::get<2>(state_info));
-    //     }
-    // }
+    
     for(int idx = 0; idx < GetPoints().size()-1; idx++)
     {
         for(int division = 0; division <= divisions; division++)

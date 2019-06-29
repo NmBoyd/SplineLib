@@ -1,6 +1,7 @@
 #include "../lib/matplotlibcpp.h"
 #include "../include/cubic_spline.h"
 #include "../include/bezier_spline.h"
+#include <vector>
 #include <chrono>
 
 using namespace Eigen;
@@ -30,24 +31,21 @@ int main(int argc, char** argv)
     if(path.size() < 2)
         return 0;
     auto start = std::chrono::system_clock::now();
-    b_spline.BuildSpline(path,divisions);
+        b_spline.BuildSpline(path,divisions);
     auto end = std::chrono::system_clock::now();
- 
     std::chrono::duration<double> elapsed_seconds = end-start;
     std::time_t end_time = std::chrono::system_clock::to_time_t(end);
- 
     std::cout << "Bezier spline finished computation in " 
-              << elapsed_seconds.count() << "s\n";
+              << elapsed_seconds.count() << "s\n" << std::endl;
 
     start = std::chrono::system_clock::now();
-    c_spline.BuildSpline(path,divisions);
+        c_spline.BuildSpline(path,divisions);
     end = std::chrono::system_clock::now();
- 
     elapsed_seconds = end-start;
     end_time = std::chrono::system_clock::to_time_t(end);
  
     std::cout << "Cubic spline finished computation in " 
-              << elapsed_seconds.count() << "s\n";
+              << elapsed_seconds.count() << "s\n"<< std::endl;
 
     std::vector<double> b_pathx(b_spline.GetPositionProfile().size());
     std::vector<double> b_pathy(b_spline.GetPositionProfile().size());
@@ -66,6 +64,7 @@ int main(int argc, char** argv)
     std::vector<double> c_pathc(c_spline.GetCurvatureProfile().size());
 
     std::vector<double> t(b_spline.GetPositionProfile().size());
+    std::vector<double> ti(c_spline.GetPositionProfile().size());
     for(int i=0;i<b_pathx.size();i++)
     {
         b_pathx[i] = b_spline.GetPositionProfile()[i].x();
@@ -87,22 +86,24 @@ int main(int argc, char** argv)
         c_pathax[i] = c_spline.GetAccelerationProfile()[i].x();
         c_pathay[i] = c_spline.GetAccelerationProfile()[i].y();
         c_pathc[i] = c_spline.GetCurvatureProfile()[i];
+        ti[i] = i/(double)divisions;
     }
     std::cout << c_spline.EvaluateCurveLength() << std::endl;
-
+    c_spline.PrintData(5);
+    b_spline.PrintData(5);
     matplotlibcpp::figure(1);
-    matplotlibcpp::plot(x_orig, y_orig,"x");
-    matplotlibcpp::plot(c_pathx, c_pathy,"r-");   // show plots
-    matplotlibcpp::plot(b_pathx, b_pathy);   
+    matplotlibcpp::plot(x_orig, y_orig, "x-");
+    matplotlibcpp::plot(b_pathx, b_pathy);  
+    matplotlibcpp::plot(c_pathx, c_pathy, "r-");   // show plots
     matplotlibcpp::figure(2);
-    matplotlibcpp::plot(t, b_pathvx);   
-    matplotlibcpp::plot(t, c_pathvx, "r-");   
+    matplotlibcpp::plot(t, b_pathvx);  
+    matplotlibcpp::plot(ti, c_pathvx, "r-");   
     matplotlibcpp::figure(3);
     matplotlibcpp::plot(t, b_pathax);   
-    matplotlibcpp::plot(t, c_pathax, "r-");  
+    matplotlibcpp::plot(ti, c_pathax, "r-");  
     matplotlibcpp::figure(4);
     matplotlibcpp::plot(t, b_pathc);   
-    matplotlibcpp::plot(t, c_pathc, "r-"); 
+    matplotlibcpp::plot(ti, c_pathc, "r-"); 
     matplotlibcpp::show();
 
 }

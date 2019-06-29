@@ -17,13 +17,10 @@ class BezierSpline : public SplineCurve
             p2_points_.reserve(NOM_SIZE);
         }
 
-        /* Evaluate the spline for the ith segment
-            * for parameter.  The value of parameter t must
-            * be between 0 and 1.
-            */
+        // Inherited Functions //
         std::tuple<Vector3d,Vector3d,Vector3d,double>  Evaluate(int seg, double t) override;
         void ResetDerived() override;
         bool ComputeSpline() override;
         void PrintDerivedData() override;
-       bool BuildSpline(std::vector<Vector3d> path, int divisions) override;
+        bool BuildSpline(std::vector<Vector3d> path, int divisions) override;
 };

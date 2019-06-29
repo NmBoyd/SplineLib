@@ -12,11 +12,11 @@ class CubicSpline : public SplineCurve
     private:   
         /* The system of linear equations found by solving
          * for the 3 order spline polynomial is given by:
-         * A*x = b.  The "x" is represented by x_col and the
-         * "b" is represented by b_col in the code.
+         * A*x = b.  The "x" is represented by x_col_ and the
+         * "b" is represented by waypoints in the code.
          *
-         * The "A" is formulated with diagonal elements (diag_elems_) and
-         * symmetric off-diagonal elements (off_diag_elems_).  The
+         * The "A" is formulated with diagonal elements  and
+         * symmetric off-diagonal elements.  The
          * general structure (for six  waypoints) looks like:
          *
          *
@@ -31,16 +31,36 @@ class CubicSpline : public SplineCurve
          *  in Robert Sedgewick's "Algorithms in C++".
          *
          */
-        std::array<std::array<Vector3d, NOM_SIZE>, 4> x_col_; // column full of constants to solve for trinomial
-        std::array<double, NOM_SIZE> spline_lengths_;
+        Vector3d x_col_[NOM_SIZE][4]; // column full of constants to solve for trinomial
+        double spline_lengths_[NOM_SIZE]; // lengths of all the spline segments in an array.
 
     public:
-        Vector3d SplineAtTime(double t);
-        double SplineArcLengthIntegrand(int spline, double t);
+        /** Overall arc length integrand of the curve */
         double ArcLengthIntegrand(double t);
+
+        /** Arc length integrand of a spline segment and point in time */
+        double SplineArcLengthIntegrand(int spline, double t);
+
+        /** Integrates for the area under a spline numerically  */
         double IntegrateSpline(int spline, double t);
+
+        /** Integrates for the area under the entire curve by summing the 
+         * integrations of all the independent splines.
+          */
         double IntegrateCurve(float t0, float t1);
+
+        /** Determines what spline is being used at a specific parametric time 
+         * along the curve. Use this to convert from global time to spline time.
+         */
+        Vector3d SplineAtTime(double t);
+
+        /** Determines the constant velocity along a spline segment. 
+         * Use this to determine the velocity from a global time perspective 
+         * rather than a segmented time perspective.
+         */
         Vector3d ConstVelocitySplineAtTime(double t);
+
+        /** Determine the length of the entire trajectory curve */
         double EvaluateCurveLength();
 
         CubicSpline();
@@ -51,8 +71,8 @@ class CubicSpline : public SplineCurve
          */
         std::tuple<Vector3d,Vector3d,Vector3d,double>  Evaluate(int segment, double t) override;
 
-        /* Clear out all the data.
-        */
+        // Inherited Functions from spline.h //
+        /* Clear out all the data.*/
         void ResetDerived() override;
         bool ComputeSpline() override;
         void PrintDerivedData() override;

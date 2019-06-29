@@ -30,9 +30,14 @@ std::tuple<Vector3d,Vector3d,Vector3d,double>  CubicSpline::Evaluate(int segment
 
 void CubicSpline::ResetDerived()
 {
-    // for(int i=0;i<4;i++)
-    //     x_col_[i].clear();
-    // setpoints_.clear();
+    for(int i=0;i<NOM_SIZE;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            x_col_[i][j] = Vector3d(0.0,0.0,0.0);
+        }
+        spline_lengths_[i] = 0.0;
+    }
 }
 
 bool CubicSpline::ComputeSpline()
@@ -153,13 +158,34 @@ double CubicSpline::EvaluateCurveLength()
 {
     float sum = 0;
 
-    for (int k = 0; k < spline_lengths_.size(); k++)
+    for (int k = 0; k < GetPoints().size(); k++)
         sum += spline_lengths_[k];
 
     return sum;
 }
 
-// Vector3d ConstVelocitySplineAtTime(float t)
+Vector3d CubicSpline::SplineAtTime(double t)
+	{
+		if (t > GetPoints().size())
+			t = GetPoints().size();
+
+		if (t == GetPoints().size())
+			t = GetPoints().size() - 0.0000f;
+
+		int spline = (int)t;
+		double fractional = t - spline;
+
+		spline = spline % (GetPoints().size()-1);
+
+		double x = fractional;
+		double xx = x*x;
+		double xxx = x*xx;
+
+		Vector3d result = x_col_[spline][0] + x_col_[spline][1]*x + x_col_[spline][2]*xx + x_col_[spline][3]*xxx;
+		return result;
+}
+
+// Vector3d CubicSpline::ConstVelocitySplineAtTime(float t)
 // {
 //     float total_length = GetTotalLength();
 // 		float desired_distance = fmod(t * speed, total_length);
