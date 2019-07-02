@@ -92,16 +92,28 @@ int main(int argc, char** argv)
     c_spline.PrintData(5);
     b_spline.PrintData(5);
     matplotlibcpp::figure(1);
+    matplotlibcpp::title("X-Y Interpolation");
+    matplotlibcpp::ylabel("Y-Position [m]");
+    matplotlibcpp::xlabel("X-Position [m]");
     matplotlibcpp::plot(x_orig, y_orig, "x-");
     matplotlibcpp::plot(b_pathx, b_pathy);  
     matplotlibcpp::plot(c_pathx, c_pathy, "r-");   // show plots
     matplotlibcpp::figure(2);
+    matplotlibcpp::title("Tangential Velocity");
+    matplotlibcpp::ylabel("Velocity [m/s]");
+    matplotlibcpp::xlabel("time [s]");
     matplotlibcpp::plot(t, b_pathvx);  
     matplotlibcpp::plot(ti, c_pathvx, "r-");   
     matplotlibcpp::figure(3);
+    matplotlibcpp::title("Tangential Acceleration");
+    matplotlibcpp::ylabel("Acceleration [m/s^2]");
+    matplotlibcpp::xlabel("time [s]");
     matplotlibcpp::plot(t, b_pathax);   
     matplotlibcpp::plot(ti, c_pathax, "r-");  
     matplotlibcpp::figure(4);
+    matplotlibcpp::title("Spline Curvature");
+    matplotlibcpp::ylabel("Curvature [1/m]");
+    matplotlibcpp::xlabel("time [s]");
     matplotlibcpp::plot(t, b_pathc);   
     matplotlibcpp::plot(ti, c_pathc, "r-"); 
     matplotlibcpp::show();
