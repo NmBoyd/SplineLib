@@ -243,7 +243,7 @@ bool CubicSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
     ComputeSpline();
     
     // Loop through all segments and create the overall spline
-    for(int idx = 0; idx < GetPoints().size()-1; idx++)
+    for(int idx = 0; idx < GetPoints().size(); idx++)
     {
         for(int division = 0; division <= divisions; division++)
         {
