@@ -58,13 +58,14 @@ class CubicSpline : public SplineCurve
          * Use this to determine the velocity from a global time perspective 
          * rather than a segmented time perspective.
          */
-        Vector3d ConstVelocitySplineAtTime(double t);
+        Vector3d ConstVelocitySplineAtTime(double t, double speed);
 
         /** Determine the length of the entire trajectory curve */
         double EvaluateCurveLength();
 
         CubicSpline();
         ~CubicSpline(){}
+
         /**
          * Evaluate spline for the ith segment for x,y,z params. 
          * The value of param t must be (0<=t<=1)

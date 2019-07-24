@@ -5,7 +5,6 @@ CubicSpline::CubicSpline()
     
 }
 
-
 std::tuple<Vector3d,Vector3d,Vector3d,double>  CubicSpline::Evaluate(int segment, double t)
 {
     const std::vector<Vector3d>& points = GetPoints();
@@ -123,6 +122,7 @@ double CubicSpline::IntegrateSpline(int spline, double t)
     return XI;
 }
 
+// Using Simpsons rule
 double CubicSpline::IntegrateCurve(float t0, float t1)
 {
     float multiplier = 1;
@@ -153,7 +153,7 @@ double CubicSpline::IntegrateCurve(float t0, float t1)
     return sum * multiplier;
 }
 
-// Using Simpsons Rule
+// Using a concatinated Simpsons Rule
 double CubicSpline::EvaluateCurveLength()
 {
     float sum = 0;
@@ -185,46 +185,47 @@ Vector3d CubicSpline::SplineAtTime(double t)
 		return result;
 }
 
-// Vector3d CubicSpline::ConstVelocitySplineAtTime(float t)
-// {
-//     float total_length = GetTotalLength();
-// 		float desired_distance = fmod(t * speed, total_length);
+Vector3d CubicSpline::ConstVelocitySplineAtTime(double t, double speed)
+{
+    float total_length = EvaluateCurveLength();
+    float desired_distance = fmod(t * speed, total_length);
 
-// 		float t_last = SPLINE_POINTS * desired_distance / total_length;
-// 		float t_next = t_last;
+    float t_last = NOM_SIZE * desired_distance / total_length;
+    float t_next = t_last;
 
-// 		auto g = [this, desired_distance](float t) -> float {
-// 			return SimpsonsRule(0, t) - desired_distance;
-// 		};
+    auto g = [this, desired_distance](float t) -> float {
+        return IntegrateCurve(0, t) - desired_distance;
+    };
 
-// 		auto L = [this](float t) -> float {
-// 			return ArcLengthIntegrand(t);
-// 		};
+    auto L = [this](float t) -> float {
+        return ArcLengthIntegrand(t);
+    };
 
-// 		float t_max = SPLINE_POINTS;
-// 		float t_min = -0.1f;
+    float t_max = NOM_SIZE;
+    float t_min = -0.1f;
 
-// 		while (t_max - t_min > 0.5f)
-// 		{
-// 			float t_mid = (t_max + t_min)/2;
-// 			if (g(t_min) * g(t_mid) < 0)
-// 				t_max = t_mid;
-// 			else
-// 				t_min = t_mid;
-// 		}
+    while (t_max - t_min > 0.5f)
+    {
+        float t_mid = (t_max + t_min)/2;
+        if (g(t_min) * g(t_mid) < 0)
+            t_max = t_mid;
+        else
+            t_min = t_mid;
+    }
 
-// 		t_next = (t_max + t_min)/2;
+    t_next = (t_max + t_min)/2;
 
-// 		do {
-// 			t_last = t_next;
-// 			t_next = t_last - g(t_last) / L(t_last);
-// 		} while(fabs(t_last - t_next) > 0.001f);
+    do {
+        t_last = t_next;
+        t_next = t_last - g(t_last) / L(t_last);
+    } while(fabs(t_last - t_next) > 0.001f);
 
-// 		// Because of root finding it may be slightly negative sometimes.
-// 		VAssert(t_next >= -0.1f && t_next <= 999999);
+    // Because of root finding it may be slightly negative sometimes.
+    // VAssert(t_next >= -0.1f && t_next <= 999999);
 
-//  return SplineAtTime(t_next);
-// }
+    return SplineAtTime(t_next);
+//  return (Vector3d(0,0,0));
+}
 
 void CubicSpline::PrintDerivedData()
 {
@@ -258,4 +259,9 @@ bool CubicSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
     }
 
     return true;
+}
+
+void PrintDerivedData()
+{
+
 }
