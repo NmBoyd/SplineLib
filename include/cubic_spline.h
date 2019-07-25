@@ -32,7 +32,6 @@ class CubicSpline : public SplineCurve
          *
          */
         Vector3d x_col_[NOM_SIZE][4]; // column full of constants to solve for trinomial
-        double spline_lengths_[NOM_SIZE]; // lengths of all the spline segments in an array.
 
     public:
         /** Overall arc length integrand of the curve */
@@ -64,20 +63,23 @@ class CubicSpline : public SplineCurve
         double EvaluateCurveLength();
 
         CubicSpline();
+        CubicSpline(std::vector<Vector3d> points);
+        CubicSpline(std::vector<Vector3d> points, int segments_per_pt);
         ~CubicSpline(){}
 
         /**
          * Evaluate spline for the ith segment for x,y,z params. 
          * The value of param t must be (0<=t<=1)
          */
-        std::tuple<Vector3d,Vector3d,Vector3d,double>  Evaluate(int segment, double t) override;
+        std::tuple<Vector3d,Vector3d,Vector3d,double>  EvaluateSplineAtTime(double t) override;
 
         // Inherited Functions from spline.h //
         /* Clear out all the data.*/
         void ResetDerived() override;
         bool ComputeSpline() override;
         void PrintDerivedData() override;
-        bool BuildSpline(std::vector<Vector3d> path, int divisions) override;
+        bool BuildSpline() override;
+        bool BuildSpline(std::vector<Vector3d> points) override;
         
 };
 

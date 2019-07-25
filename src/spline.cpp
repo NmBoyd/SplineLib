@@ -4,7 +4,12 @@
         void SplineCurve::Reset()
         {
             points_.clear();
-            ResetDerived();
+            pos_profile_.clear();
+            vel_profile_.clear();
+            accel_profile_.clear();
+            curvature_profile_.clear();
+            spline_lengths_.clear();
+            // ResetDerived();
         }
 
         void  SplineCurve::AddPoint(const Vector3d& pt)
@@ -45,13 +50,13 @@
 
             std::cout << "-----------------------------" << std::endl;
             std::cout << "Evaluating Spline at " << segments << " points." << std::endl;
-            for(int idx = 0; idx < points_.size()-1; idx++)
+            for(int idx = 0; idx < points_.size(); idx++)
             {
                 std::cout << "---------- " << "From " <<  points_[idx] << " to " << points_[idx+1] << "." << std::endl;
                 for(int tIdx = 0; tIdx < segments+1; ++tIdx)
                 {
                     double t = tIdx*1.0/segments;
-                    std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = Evaluate(idx, t);
+                    std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = EvaluateSplineAtTime(t);
                     std::cout << "[" << tIdx << "]" << "   ";
                     std::cout << "[" << t*100 << "%]" << "   ";
                     std::cout << " --> " << std::get<0>(state_info);

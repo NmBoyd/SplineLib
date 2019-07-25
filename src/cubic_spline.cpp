@@ -1,23 +1,37 @@
 #include "../include/cubic_spline.h"
 
-CubicSpline::CubicSpline()
+CubicSpline::CubicSpline() 
+    : SplineCurve()
 {
-    
+}
+CubicSpline::CubicSpline(std::vector<Vector3d> points) 
+    : SplineCurve(points)
+{ 
+}
+CubicSpline::CubicSpline(std::vector<Vector3d> points, int segments_per_pt) 
+    : SplineCurve(points, segments_per_pt)
+{
 }
 
-std::tuple<Vector3d,Vector3d,Vector3d,double>  CubicSpline::Evaluate(int segment, double t)
+std::tuple<Vector3d,Vector3d,Vector3d,double>  CubicSpline::EvaluateSplineAtTime(double t)
 {
     const std::vector<Vector3d>& points = GetPoints();
-    // assert(t >= 0);
-    // assert(t <= 1.0);
-    // assert(segment >= 0);
-    // assert(segment < (points.size()));
+
+    if (t > GetPoints().size())
+        t = GetPoints().size();
+
+    if (t == GetPoints().size())
+        t = GetPoints().size() - 0.0000f;
+
+    int segment = (int)t;
+    t = t - segment;
+
+    segment = segment % (GetPoints().size()-1);
 
     Vector3d spline_positions = x_col_[segment][0] + x_col_[segment][1]*t + x_col_[segment][2]*t*t + x_col_[segment][3]*t*t*t;
     Vector3d spline_velocity = x_col_[segment][1] + x_col_[segment][2]*2*t + x_col_[segment][3]*3*t*t;
     Vector3d spline_acceleration = x_col_[segment][2]*2 + x_col_[segment][3]*6*t;
    
-    // TODO: Should be more unsteady
     double   spline_curvature = (spline_velocity.x()*spline_acceleration.y())-(spline_velocity.y()*spline_acceleration.x())/
                                 pow((spline_velocity.x()*spline_velocity.x()+spline_velocity.y()*spline_velocity.y()),(3/2));
     
@@ -46,7 +60,7 @@ bool CubicSpline::ComputeSpline()
     int n = p.size()-1;
 
     Vector3d a[p.size()];
-    for (int i = 1; i < n; i++)
+    for (int i = 1; i <= n-1; i++)
         a[i] = 3*((p[i+1] - 2*p[i] + p[i-1]));
 
     float l[p.size()];
@@ -86,7 +100,7 @@ double CubicSpline::SplineArcLengthIntegrand(int spline, double t)
     return sqrt(dv.x()*dv.x() + dv.y()*dv.y() + dv.z()*dv.z());
 }
 
-double CubicSpline::ArcLengthIntegrand( double t)
+double CubicSpline::ArcLengthIntegrand(double t)
 {
     if (t < 0)
         return SplineArcLengthIntegrand(0, t);
@@ -98,7 +112,7 @@ double CubicSpline::ArcLengthIntegrand( double t)
 }
 
 // Composite Simpson's Rule, Burden & Faires - Numerical Analysis 9th, algorithm 4.1
-// Integrate spline 
+// Integrate spline section between t=[0,1]
 double CubicSpline::IntegrateSpline(int spline, double t)
 {
 
@@ -158,31 +172,10 @@ double CubicSpline::EvaluateCurveLength()
 {
     float sum = 0;
 
-    for (int k = 0; k < GetPoints().size(); k++)
-        sum += spline_lengths_[k];
+    for (int i = 0; i < GetPoints().size(); i++)
+        sum += spline_lengths_[i];
 
     return sum;
-}
-
-Vector3d CubicSpline::SplineAtTime(double t)
-	{
-		if (t > GetPoints().size())
-			t = GetPoints().size();
-
-		if (t == GetPoints().size())
-			t = GetPoints().size() - 0.0000f;
-
-		int spline = (int)t;
-		double fractional = t - spline;
-
-		spline = spline % (GetPoints().size()-1);
-
-		double x = fractional;
-		double xx = x*x;
-		double xxx = x*xx;
-
-		Vector3d result = x_col_[spline][0] + x_col_[spline][1]*x + x_col_[spline][2]*xx + x_col_[spline][3]*xxx;
-		return result;
 }
 
 Vector3d CubicSpline::ConstVelocitySplineAtTime(double t, double speed)
@@ -223,8 +216,8 @@ Vector3d CubicSpline::ConstVelocitySplineAtTime(double t, double speed)
     // Because of root finding it may be slightly negative sometimes.
     // VAssert(t_next >= -0.1f && t_next <= 999999);
 
-    return SplineAtTime(t_next);
-//  return (Vector3d(0,0,0));
+    // return EvaluateSplineAtTime(t_next);
+    return Vector3d(0.0,0.0,0.0);
 }
 
 void CubicSpline::PrintDerivedData()
@@ -232,34 +225,61 @@ void CubicSpline::PrintDerivedData()
     std::cout << " Control Points " << std::endl;
 }
 
-bool CubicSpline::BuildSpline(std::vector<Vector3d> setpoints, int divisions)
+bool CubicSpline::BuildSpline()
 {
-    assert(setpoints.size() > 2);
-    
-    for(int idx = 0; idx<setpoints.size(); idx++)
-    {
-        AddPoint(setpoints[idx]);
-    }
-    // Smooth them.
+    assert(GetPoints().size() > 2);
+    // Smooth splines
+    std::cout << "Computing Spline" << std::endl;
     ComputeSpline();
-    
+    // Get the number of segments in the spline
+    double spline_segments = (GetPoints().size()-1)*segments_per_pt_;
     // Loop through all segments and create the overall spline
-    for(int idx = 0; idx < GetPoints().size(); idx++)
+
+    std::cout << "Generating Spline Properties" << std::endl;
+    for(int t = 0; t < spline_segments; t++)
     {
-        for(int division = 0; division <= divisions; division++)
-        {
-            double t = division*1.0/divisions;
-            std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = Evaluate(idx, t);
-            pos_profile_.push_back(std::get<0>(state_info));    // this is backwards
-            vel_profile_.push_back(std::get<1>(state_info));
-            accel_profile_.push_back(std::get<2>(state_info));
-            curvature_profile_.push_back(std::get<3>(state_info));
-        }
-        spline_lengths_[idx] = IntegrateSpline(idx, 1);
+        double t0 = (double)t/segments_per_pt_;
+        // double t1 = (double)(t+1)/segments_per_pt_; next point
+        std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = EvaluateSplineAtTime(t0);
+        pos_profile_.push_back(std::get<0>(state_info));
+        vel_profile_.push_back(std::get<1>(state_info));
+        accel_profile_.push_back(std::get<2>(state_info));
+        curvature_profile_.push_back(std::get<3>(state_info));
+    }
+    std::tuple<Vector3d, Vector3d, Vector3d, double> state_info = std::make_tuple( 
+                                                                    GetPoints()[GetPoints().size()-1], 
+                                                                    Vector3d(0.0,0.0,0.0),
+                                                                    Vector3d(0.0,0.0,0.0),
+                                                                    0.0
+                                                                );
+    pos_profile_.push_back(std::get<0>(state_info));
+    vel_profile_.push_back(std::get<1>(state_info));
+    accel_profile_.push_back(std::get<2>(state_info));
+    curvature_profile_.push_back(std::get<3>(state_info));
+
+    for(int i=0;i<GetPoints().size()-1;i++)
+    {
+        spline_lengths_.push_back(IntegrateSpline(i, 1));
     }
 
     return true;
 }
+
+bool CubicSpline::BuildSpline(std::vector<Vector3d> points)
+{
+    assert(points.size() > 2);
+
+    Reset();
+    for(int i = 0; i<points.size(); i++)
+    {
+        AddPoint(points[i]);
+    }
+    
+    BuildSpline();
+
+    return true;
+}
+
 
 void PrintDerivedData()
 {
